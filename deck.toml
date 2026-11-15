@@ -1,0 +1,17 @@
+[package]
+name = "@deckyard/anthropic"
+version = "0.1.0"
+description = "A client for Anthropic's Claude Messages API: tool use, thinking, prompt caching, token counting and message batches"
+license = "LGPL-3.0-only"
+authors = ["mplx <mplx@jennifer-lang.dev>"]
+# It talks to the vendor's HTTPS API, so it opens sockets.
+capabilities = ["net"]
+keywords = ["anthropic", "claude", "llm", "ai", "chat", "api"]
+
+[package.urls]
+deck = "https://raw.githubusercontent.com/deckyard/deck-anthropic/main/deck.toml"
+homepage = "https://github.com/deckyard/deck-anthropic"
+manual = "https://deckyard.github.io/deck-anthropic/"
+
+[engines]
+jennifer = ">=0.26.0"
