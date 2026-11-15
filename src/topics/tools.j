@@ -19,7 +19,7 @@ def const TOOL_ERROR_KEY as string init "anthropic.toolError";
  * @field turns {int} how many requests were sent
  * @field calls {int} how many tool calls the handler ran
  * @field usage {Usage} the token counts of every reply, summed
- * @field stopped {string} `""` when the model finished, `maxTurns` when the loop stopped at `maxTurns` requests while the model still wanted tools or a paused turn to go on
+ * @field stopped {string} `""` when the model finished, `maxTurns` when the loop stopped at `maxTurns` requests while the model still wanted tools, or a paused or compacted turn to go on
  */
 export def struct ToolRun {
     reply as json.Value,
@@ -315,7 +315,7 @@ func loop(
             def answers as Answers init answerAll($c, $handler, $wanted, $context, $withContext);
             $calls = $calls + $answers.ran;
             $req = addUser($req, $answers.results);
-        } elseif ($stop != "pause_turn") {
+        } elseif ($stop != "pause_turn" and $stop != "compaction") {
             return ToolRun{
                 reply: $reply,
                 request: $req,
@@ -341,7 +341,9 @@ func loop(
  * run each tool call through the handler, append the reply unchanged
  * (thinking blocks included, as the API requires) and one user turn with
  * every result, and send again. A `pause_turn` (a long server-tool turn)
- * is sent back as it is. The loop ends at any other stop reason
+ * is sent back as it is, and so is a `compaction` stop (beta compaction
+ * with `pause_after_compaction`); each counts against `maxTurns`. The loop
+ * ends at any other stop reason
  * (`end_turn`, `max_tokens`, `refusal`, ...: `stopped` is `""`), or after
  * `maxTurns` requests (`stopped` is `maxTurns`; the last reply's tool calls
  * are answered, so `request` can be sent on with another `runTools`).
@@ -363,7 +365,7 @@ func loop(
  * @param maxTurns {int} the most requests to send, 1 to 1000
  * @return {ToolRun} the last reply, the conversation, the turns, the tool calls, the summed usage and why the loop stopped
  * @throws {AnthropicError} kind "anthropic" when a request fails or a reply asks for tools without a tool_use block
- * @throws {Error} whatever the handler throws; kind "limit", "timeout" or "closed" from a request
+ * @throws {Error} whatever the handler throws; kind "limit", "timeout", "closed" or "net" from a request
  * @example
  *   def run as anthropic.ToolRun init anthropic.runTools($c, $req, runTool, 10);
  *   io.printf("%s\n", anthropic.text($run.reply));
@@ -385,7 +387,7 @@ export func runTools(c as Client, req as json.Value, handler as func, maxTurns a
  * @param maxTurns {int} the most requests to send, 1 to 1000
  * @return {ToolRun} the last reply, the conversation, the turns, the tool calls, the summed usage and why the loop stopped
  * @throws {AnthropicError} kind "anthropic" when a request fails or a reply asks for tools without a tool_use block
- * @throws {Error} whatever the handler throws; kind "limit", "timeout" or "closed" from a request
+ * @throws {Error} whatever the handler throws; kind "limit", "timeout", "closed" or "net" from a request
  * @example
  *   def ctx as json.Value init json.decode('{"unit": "celsius"}');
  *   def run as anthropic.ToolRun init anthropic.runToolsWith($c, $req, runTool, $ctx, 10);

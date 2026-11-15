@@ -449,7 +449,7 @@ export func withFallbacks(req as json.Value) {
  * @param req {json.Value} the request, from `newRequest` or written by hand
  * @return {json.Value} the reply: `id`, `model`, `content` (blocks), `stop_reason`, `stop_details`, `usage`, ...
  * @throws {AnthropicError} kind "anthropic" when the request is malformed, the status is not 2xx (after the retries), or the reply is not a message
- * @throws {Error} kind "limit" for a reply over the cap, "timeout" for a deadline that passed, "closed" for a connection the server closed
+ * @throws {Error} kind "limit" for a reply over the cap, "timeout" for a deadline that passed, "closed" for a connection the server closed after part of its answer, "net" (a `net.NetError`) for a network failure
  * @example
  *   def reply as json.Value init anthropic.chat($c, $req);
  *   io.printf("%s\n", anthropic.text($reply));
@@ -588,7 +588,7 @@ export func toolCalls(reply as json.Value) {
  * Why the model stopped.
  *
  * @param reply {json.Value} the reply
- * @return {string} `end_turn`, `max_tokens`, `stop_sequence`, `tool_use`, `pause_turn`, `refusal` or `model_context_window_exceeded`
+ * @return {string} `end_turn`, `max_tokens`, `stop_sequence`, `tool_use`, `pause_turn`, `refusal`, `model_context_window_exceeded`, or `compaction` (beta)
  */
 export func stopReason(reply as json.Value) {
     return textAt($reply, "/stop_reason");

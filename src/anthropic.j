@@ -15,14 +15,16 @@
  * Every request carries `x-api-key` and `anthropic-version` (`API_VERSION`,
  * `2026-10-21`), has a deadline (10 minutes by default: a reply is not
  * streamed) and a reply cap, and is retried on 408, 409, 429 and 5xx (529
- * is "overloaded") and on a connection that failed, honouring
- * `retry-after-ms` and `retry-after`; a request whose answer broke off is
- * never sent twice. A refused request throws `AnthropicError` (kind
+ * is "overloaded") and on a network failure before the request was
+ * sent, honouring `retry-after-ms` and `retry-after`; a request that was
+ * sent is never sent twice. A refused request throws `AnthropicError` (kind
  * `anthropic`) with the HTTP `status`, Anthropic's error `type`, the
  * `requestId`, the wait asked for and the rate-limit headers; a reply over
  * the cap is kind `"limit"`,
  * a deadline that passed `"timeout"`, a connection the server closed
- * mid-answer `"closed"`. The API key never appears in a message or a URL.
+ * after part of its answer `"closed"`, and a network failure is the
+ * bundled `http`'s `net.NetError` (kind `"net"`), passed on unchanged.
+ * The API key never appears in a message or a URL.
  *
  * | topic | covers |
  * | --- | --- |
@@ -46,6 +48,7 @@ use json;
 use lists;
 use maps;
 use math;
+use net;
 use regex;
 use strings;
 use task;

@@ -81,13 +81,15 @@ minutes, so one attempt may take 10 minutes by default, the limit the
 official SDKs use. Raise it with `withTimeout`, lower `max_tokens`, or send
 long work as a [batch](batches.md).
 
-**Retries.** A 408, 409, 429 or 5xx reply (529 is "overloaded") and a
-connection that failed (refused, reset, DNS, TLS: kind "runtime" in the
-bundled `http`) are retried twice. An answer that broke off once the
-connection was made is never sent again, whatever the method, since the
-request may have run (no duplicate batches or charges): a body cut short
-is kind `"closed"`, a connection closed before or in the head of the reply
-(`http` cannot tell these apart) kind `"anthropic"`. A `retry-after-ms`
+**Retries.** A 408, 409, 429 or 5xx reply (529 is "overloaded") is retried
+twice, and so is a transport failure that left the request unsent: a
+`net.NetError` (kind `"net"`) whose `sent` is false, such as a refused
+connection, a failed lookup or TLS handshake, or a reset before the whole
+request was written. Once the request was sent, a reset or a close (with
+or without part of the answer, `replied`) is never retried, whatever the
+method, since the request may have run (no duplicate batches or charges):
+the `NetError` is passed on unchanged, and a body cut short is kind
+`"closed"`. A malformed answer is kind `"anthropic"`. A `retry-after-ms`
 header sets the wait, else `retry-after` in seconds or as an HTTP date, up
 to a minute (`MAX_RETRY_WAIT_MS`); a longer one is not waited for and the
 error is thrown at once, with the wait in `retryAfterMs`. Without one the
@@ -136,10 +138,11 @@ Current models differ from what older code assumes:
 
 | Kind | Struct | When |
 |---|---|---|
-| `"anthropic"` | `AnthropicError` | the API refused the request (`status`, `type`, `requestId`, `retryAfterMs`, `limits`); the deck refused to send it, or the server could not be reached (`status` 0); the reply was not what the API sends |
+| `"anthropic"` | `AnthropicError` | the API refused the request (`status`, `type`, `requestId`, `retryAfterMs`, `limits`); the deck refused to send it (`status` 0); the reply was not what the API sends |
+| `"net"` | `net.NetError` | the network failed: `reason` (`refused`, `reset`, `dns`, `tls`, `closed`, ...), `sent`, `replied`; passed on unchanged from `http` |
 | `"limit"` | `Error` | a reply over the cap; `models` past 100 pages or its pages together over the cap; a batch over 100000 requests |
 | `"timeout"` | `Error` | no reply within the deadline; `waitBatch` past its timeout |
-| `"closed"` | `Error` | the server closed the connection mid-answer, on the last attempt |
+| `"closed"` | `Error` | the server closed the connection after part of its answer |
 | `"cancelled"` | `Error` | the task running the request was cancelled |
 
 `AnthropicError.type` is Anthropic's `error.type`: `invalid_request_error`

@@ -254,6 +254,12 @@ func parseResults(text as string, what as string) {
         try {
             $v = json.decode($line);
         } catch (e) {
+            if ($e.kind == "limit") {
+                failLimit(io.sprintf(
+                    "%s: line %d is too deeply nested or has too many values",
+                    $what,
+                    $n));
+            }
             fail(io.sprintf("%s: line %d is not JSON", $what, $n));
         }
         if (json.typeOf($v, "/custom_id") != "string" or json.typeOf($v, "/result/type") != "string") {

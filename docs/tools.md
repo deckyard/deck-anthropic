@@ -51,7 +51,9 @@ program to run.
 2. append the reply unchanged (`addReply`): text, thinking and tool blocks;
 3. if it stopped for `tool_use`, run every `tool_use` block through the
    handler and append one user turn with all the results; if it stopped for
-   `pause_turn`, append nothing;
+   `pause_turn`, or for `compaction` (beta compaction with
+   `pause_after_compaction`), append nothing; each such turn counts against
+   `maxTurns`;
 4. repeat, until the model stops for anything else (`end_turn`,
    `max_tokens`, `refusal`, ...) or `maxTurns` requests were sent.
 

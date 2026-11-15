@@ -336,3 +336,29 @@ func testAToolInputOverTheCapIsAnErrorResult() {
     }
 }
 
+func testACompactionStopGoesOnLikeAPausedTurn() {
+    def compacted as string init '{"id":"msg_01C","type":"message","role":"assistant",' +
+        '"model":"claude-opus-5-5","content":[{"type":"compaction","content":"Summary so far."}],' +
+        '"stop_reason":"compaction","usage":{"input_tokens":50,"output_tokens":10}}';
+    def f as Fake init startFake([
+        answer(200, $compacted),
+        answer(200, TURN4),
+        answer(200, $compacted)
+    ]);
+    def c as Client init fakeClient($f);
+    def req as json.Value init addUserText(newRequest(DEFAULT_MODEL), "x");
+    def run as ToolRun init runTools($c, $req, fakeTool, 5);
+    testing.assertEqual($run.turns, 2);
+    testing.assertEqual($run.stopped, "");
+    testing.assertEqual(text($run.reply), "Paris 18, Oslo 4.");
+    # it counts against maxTurns
+    def one as ToolRun init runTools($c, $req, fakeTool, 1);
+    testing.assertEqual($one.stopped, "maxTurns");
+    testing.assertEqual(stopReason($one.reply), "compaction");
+    def seen as list of string init stopFake($f);
+    # the compaction block went back as it came, with no user turn after it
+    def second as json.Value init seenBody($seen[1]);
+    testing.assertEqual(json.length($second, "/messages"), 2);
+    testing.assertEqual(json.asString($second, "/messages/1/content/0/type"), "compaction");
+}
+

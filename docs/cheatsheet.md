@@ -16,7 +16,9 @@ the HTTP `status`, Anthropic's error `type`, the `requestId`, the wait the
 server asked for and its rate-limit headers; so does a
 request the deck refuses to send (`status` 0). A reply over the cap is kind
 `"limit"`, a deadline that passed `"timeout"`, a connection the server
-closed mid-answer `"closed"`; a cancelled task stays `"cancelled"`. A `c`
+closed after part of its answer `"closed"`; a network failure is the
+bundled `http`'s `net.NetError` (kind `"net"`), passed on unchanged; a
+cancelled task stays `"cancelled"`. A `c`
 argument is a `Client`, a `req` a Messages request, a `reply` what `chat`
 returned.
 
@@ -107,7 +109,7 @@ returned.
 | `countTokens(c, req)` | `int` | the input tokens the request would take |
 | `text(reply)` | `string` | the reply's text blocks joined |
 | `toolCalls(reply)` | `list of ToolCall` | the reply's `tool_use` blocks |
-| `stopReason(reply)` | `string` | `end_turn`, `max_tokens`, `tool_use`, `pause_turn`, `refusal`, ... |
+| `stopReason(reply)` | `string` | `end_turn`, `max_tokens`, `tool_use`, `pause_turn`, `refusal`, `compaction`, ... |
 | `refusalCategory(reply)` | `string` | a refusal's category, such as `cyber`; `""` otherwise |
 | `usage(reply)` | `Usage` | the reply's token counts |
 

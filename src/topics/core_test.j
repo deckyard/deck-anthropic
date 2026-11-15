@@ -516,7 +516,7 @@ func testTheCapIsKindLimit() {
     stopFake($f);
 }
 
-func testAnUnreachableServerIsRetriedThenAnthropic() {
+func testAnUnreachableServerIsRetriedThenNet() {
     def srv as httpd.Server init httpd.listen("127.0.0.1:0");
     def base as string init "http://" + httpd.address($srv);
     httpd.shutdown($srv);
@@ -526,9 +526,11 @@ func testAnUnreachableServerIsRetriedThenAnthropic() {
         models($c);
         missed("no server");
     } catch (e) {
-        testing.assertEqual($e.kind, "anthropic");
-        testing.assertEqual($e.status, 0);
-        testing.assertContains($e.message, "models: cannot reach");
+        # the NetError of the last attempt, passed on unchanged
+        testing.assertEqual($e.kind, "net");
+        def ne as net.NetError init $e;
+        testing.assertEqual($ne.reason, "refused");
+        testing.assertFalse($ne.sent);
         testing.assertFalse(strings.contains($e.message, KEY));
     }
 }
@@ -680,13 +682,17 @@ func testAPostWhoseAnswerBrokeOffIsNotSentTwice() {
     } catch (e) {
         testing.assertEqual($e.kind, "closed");
     }
-    # an answer that broke off before its head: not sent twice either
+    # a connection closed before any byte of the answer: not sent twice
+    # either, and its NetError passed on
     try {
         chat($c, $req);
         missed("no answer");
     } catch (e) {
-        testing.assertEqual($e.kind, "anthropic");
-        testing.assertContains($e.message, "messages: the reply broke off or is malformed");
+        testing.assertEqual($e.kind, "net");
+        def ne as net.NetError init $e;
+        testing.assertEqual($ne.reason, "closed");
+        testing.assertTrue($ne.sent);
+        testing.assertFalse($ne.replied);
     }
     # each POST was sent once
     testing.assertEqual(task.wait($t), 2);
@@ -769,5 +775,79 @@ func testRetryAfterMsIsCappedAndLimitsAtMost32() {
         testing.assertEqual(len($e.limits), 32);
     }
     stopFake($f);
+}
+
+/**
+ * Reset connections: accept each, read the request first unless `early`,
+ * write `reply` (when not empty), then abort with a TCP reset.
+ *
+ * @param l {net.Listener} the listener
+ * @param n {int} how many connections to take
+ * @param early {bool} reset at once, before the request is read
+ * @param reply {string} what to send before the reset
+ * @return {int} how many connections were taken
+ */
+func serveResets(l as net.Listener, n as int, early as bool, reply as string) {
+    for (def i in 0..$n) {
+        def conn as net.Conn init net.accept($l);
+        if (not $early) {
+            net.readBytes($conn, 65536);
+        }
+        if ($reply != "") {
+            net.writeBytes($conn, convert.bytesFromString("utf-8", $reply));
+            time.sleep(time.fromMilliseconds(50));
+        }
+        net.abort($conn);
+    }
+    return $n;
+}
+
+func testAResetBeforeTheRequestWasSentIsRetried() {
+    def l as net.Listener init net.listen("127.0.0.1:0");
+    def addr as string init net.address($l);
+    def t as task of int init spawn {
+        return serveResets($l, 3, true, "");
+    };
+    def c as Client init withTimeout(withBaseUrl(client(KEY), "http://" + $addr), 5000);
+    $c.backoffMs = 10;
+    # a body too big for the socket buffers: the write meets the reset
+    def big as json.Value init json.set(json.map(), "/pad", strings.repeat("x", 16000000));
+    try {
+        call($c, "POST", "/v1/messages", $big);
+        missed("resets");
+    } catch (e) {
+        testing.assertEqual($e.kind, "net");
+        def ne as net.NetError init $e;
+        testing.assertEqual($ne.reason, "reset");
+        testing.assertFalse($ne.sent);
+    }
+    # three attempts: the request never reached the server
+    testing.assertEqual(task.wait($t), 3);
+    net.close($l);
+}
+
+func testAResetAfterTheRequestOrMidAnswerIsNotRetried() {
+    for (def reply in ["", "HTTP/1.1 200 OK\r\nContent-Length: 50\r\n\r\n" + '{"id"']) {
+        def l as net.Listener init net.listen("127.0.0.1:0");
+        def addr as string init net.address($l);
+        def t as task of int init spawn {
+            return serveResets($l, 1, false, $reply);
+        };
+        def c as Client init withTimeout(withBaseUrl(client(KEY), "http://" + $addr), 2000);
+        $c.backoffMs = 10;
+        try {
+            chat($c, addUserText(newRequest(DEFAULT_MODEL), "x"));
+            missed("a reset");
+        } catch (e) {
+            testing.assertEqual($e.kind, "net");
+            def ne as net.NetError init $e;
+            testing.assertEqual($ne.reason, "reset");
+            testing.assertTrue($ne.sent);
+            testing.assertEqual($ne.replied, $reply != "");
+        }
+        # one connection: a second attempt would time out on the listener
+        testing.assertEqual(task.wait($t), 1);
+        net.close($l);
+    }
 }
 

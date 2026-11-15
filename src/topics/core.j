@@ -25,7 +25,7 @@ export def const DEFAULT_MODEL as string init "claude-opus-5-5";
  */
 export def const DEFAULT_TIMEOUT_MS as int init 600000;
 
-/** How often a fresh client retries a 408, 409, 429 or 5xx reply, or a failed connection. */
+/** How often a fresh client retries a 408, 409, 429 or 5xx reply, or a request the network failed to send. */
 export def const DEFAULT_RETRIES as int init 2;
 
 /**
@@ -129,18 +129,17 @@ export def struct AnthropicError {
 };
 
 /**
- * The result of one attempt: a reply, or why there was none.
+ * The result of one attempt: a reply, or a transport failure that left the
+ * request unsent and may be retried. Every other failure is thrown.
  *
- * @field response {http.BytesResponse} the reply when `failure` is `""`
- * @field failure {string} why no reply was read, `""` when one was
- * @field closed {bool} whether the server closed the connection mid-answer
- * @field sent {bool} whether the request may have reached the server: the connection was made and the answer broke off (before or after its first byte) or was malformed
+ * @field response {http.BytesResponse} the reply when not `failed`
+ * @field failed {bool} whether the attempt failed before the request was sent
+ * @field netError {net.NetError} that failure, with `sent` false
  */
 def struct Attempt {
     response as http.BytesResponse,
-    failure as string,
-    closed as bool,
-    sent as bool
+    failed as bool,
+    netError as net.NetError
 };
 
 /**
@@ -409,11 +408,11 @@ export func withTimeout(c as Client, ms as int) {
 }
 
 /**
- * The client retrying a 408, 409, 429 or 5xx reply, or a failed
- * connection, this often: one refused or reset, or a DNS or TLS failure
- * (kind "runtime" from `http`). A deadline that passed is not retried, nor
- * an answer that broke off once the connection was made, whatever the
- * method: the request may have run (no duplicate batches or charges).
+ * The client retrying a 408, 409, 429 or 5xx reply, or a `net.NetError`
+ * whose `sent` is false (refused, DNS, TLS, a reset before the whole
+ * request was written), this often. A deadline that passed is not retried,
+ * nor a request that was sent and then reset or closed, whatever the
+ * method: it may have run (no duplicate batches or charges).
  *
  * @param c {Client} the client
  * @param retries {int} 0 to 10
@@ -478,13 +477,9 @@ func attempt(
     def t as task of http.BytesResponse init spawn {
         return http.requestWithBytes($method, $url, $headers, $body, $timeoutMs, $maxBytes, $tls);
     };
+    def none as net.NetError;
     try {
-        return Attempt{
-            response: task.waitTimeout($t, $timeoutMs),
-            failure: "",
-            closed: false,
-            sent: false
-        };
+        return Attempt{response: task.waitTimeout($t, $timeoutMs), failed: false, netError: $none};
     } catch (e) {
         if ($e.kind == "cancelled") {
             task.cancel($t);
@@ -499,33 +494,29 @@ func attempt(
         if ($e.kind == "limit") {
             failLimit(io.sprintf("%s: the reply is over %d bytes", $what, $maxBytes));
         }
+        if ($e.kind == "net") {
+            # refused, unreachable, DNS, TLS, or reset or closed before the
+            # whole request was written: it never reached the server, so it
+            # may be sent again. Once sent, a reset or a close may come
+            # after the server acted on it: passed on, never resent
+            def ne as net.NetError init $e;
+            if ($ne.sent or $ne.replied) {
+                throw $e;
+            }
+            return Attempt{response: http.BytesResponse{}, failed: true, netError: $ne};
+        }
         def why as string init cleaned(scrub($c, $e.message), 300);
         if ($e.kind == "closed") {
-            return Attempt{
-                response: http.BytesResponse{},
-                failure: $what + ": the server closed the connection: " + $why,
-                closed: true,
-                sent: true
+            # the server closed the connection after part of its answer
+            throw Error{
+                kind: "closed",
+                message: "anthropic: " + $what + ": the server closed the connection: " + $why
             };
         }
         if ($e.kind == "http") {
-            # the connection was made: the answer broke off before or in its
-            # head, or its framing is malformed (http does not tell which).
-            # A refused or reset connection, DNS and TLS failures are kind
-            # "runtime" and fall through to "cannot reach", which is retried
-            return Attempt{
-                response: http.BytesResponse{},
-                failure: $what + ": the reply broke off or is malformed: " + $why,
-                closed: false,
-                sent: true
-            };
+            fail($what + ": the reply is malformed: " + $why);
         }
-        return Attempt{
-            response: http.BytesResponse{},
-            failure: $what + ": cannot reach " + shown($c.baseUrl) + ": " + $why,
-            closed: false,
-            sent: false
-        };
+        fail($what + ": cannot reach " + shown($c.baseUrl) + ": " + $why);
     }
 }
 
@@ -638,7 +629,7 @@ func exchange(c as Client, method as string, path as string, body as string, wha
         def a as Attempt init attempt($c, $method, $url, $headers, $body, $what);
         def last as bool init $n > $c.retries;
         def wait as int init 0;
-        if ($a.failure == "") {
+        if (not $a.failed) {
             if ($a.response.status >= 200 and $a.response.status <= 299) {
                 return $a.response;
             }
@@ -650,28 +641,15 @@ func exchange(c as Client, method as string, path as string, body as string, wha
                 failStatus($c, $a.response, $what);
             }
         } else {
-            # an answer that broke off (the request may have run) is never
-            # sent again: only a connection that failed is retried
-            if ($last or $a.sent) {
-                failAttempt($a);
+            # a request that was not sent: retried, else its NetError as it is
+            if ($last) {
+                def ne as net.NetError init $a.netError;
+                throw $ne;
             }
             $wait = retryWait($c, $a.response, $n);
         }
         time.sleep(time.fromMilliseconds($wait));
     }
-}
-
-/**
- * Throw the failure of an attempt that read no reply: kind "closed" when
- * the server closed the connection mid-answer, else kind "anthropic".
- *
- * @param a {Attempt} the attempt
- */
-func failAttempt(a as Attempt) {
-    if ($a.closed) {
-        throw Error{kind: "closed", message: "anthropic: " + $a.failure};
-    }
-    fail($a.failure);
 }
 
 /**

@@ -227,3 +227,26 @@ func testWaitBatchCutsASlowPollToTheTimeLeft() {
     testing.assertTrue(time.unixMillis(time.now()) - $started < 2500);
     stopFake($f);
 }
+
+func testADecodeBombInTheResultsIsKindLimit() {
+    def deep as string init strings.repeat("[", 2000) + strings.repeat("]", 2000);
+    def f as Fake init startFake([answer(200, RESULTS + $deep + "\n"), answer(200, $deep)]);
+    def c as Client init fakeClient($f);
+    try {
+        batchResults($c, "msgbatch_01HkcTjaV5uDC8jWR4ZsDV8d");
+        missed("a bomb line");
+    } catch (e) {
+        testing.assertEqual($e.kind, "limit");
+        testing.assertContains($e.message, "line 7 is too deeply nested");
+    }
+    # a reply that is one: the same kind
+    try {
+        models($c);
+        missed("a bomb reply");
+    } catch (e) {
+        testing.assertEqual($e.kind, "limit");
+        testing.assertContains($e.message, "models: the reply is too deeply nested");
+    }
+    stopFake($f);
+}
+

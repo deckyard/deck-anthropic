@@ -78,8 +78,9 @@ Everything else is in the reply itself: `json.asString($reply, "/model")`,
 The stop reasons are `end_turn`, `max_tokens` (the reply was cut at
 `max_tokens`), `stop_sequence`, `tool_use`, `pause_turn` (a long server-tool
 turn paused: send the reply back as it is to go on),
-`refusal` and `model_context_window_exceeded`. Check it before using the
-text.
+`refusal`, `model_context_window_exceeded`, and with beta compaction
+`compaction` (the context was summarised: send the reply back as it is).
+Check it before using the text.
 
 ## Thinking and effort
 
