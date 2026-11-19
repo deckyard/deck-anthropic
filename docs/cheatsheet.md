@@ -26,7 +26,6 @@ returned.
 
 | Constant | Value | Meaning |
 |---|---|---|
-| `VERSION` | `"0.1.0"` | this deck's version |
 | `DEFAULT_BASE_URL` | `"https://api.anthropic.com"` | where the API is served |
 | `API_VERSION` | `"2026-10-21"` | the `anthropic-version` a fresh client sends |
 | `DEFAULT_MODEL` | `"claude-opus-5-5"` | the model the docs and examples use |

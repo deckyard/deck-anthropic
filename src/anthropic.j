@@ -56,7 +56,6 @@ use time;
 
 import "http.j" as http;
 
-include "topics/version.j";
 include "topics/core.j";
 include "topics/messages.j";
 include "topics/tools.j";
