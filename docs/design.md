@@ -188,14 +188,3 @@ these `jennifer` milestones:
 - M28.71, `net.abort`, which the tests use for real resets.
 - M30.9, streaming HTTP responses and server-sent events (planned), is
   what streaming waits for.
-
-## History
-
-- 2026-11-14: built, offline against the API reference.
-- 2026-11-15: aligned with `openai` and `gemini` in four rounds (request
-  builders, `toolError`, `ToolRun`, `ToolCall`, `Usage`, one retry rule,
-  `withMaxToolInput`, `stopped`, error `retryAfterMs` and `limits`, a
-  `compaction` stop continues the loop) and validated: `countTokens` field
-  stripping, key scrubbing of every error field, a byte cap over all model
-  pages, `waitBatch` deadlines, hostile replies; then adapted to the
-  core's `net.NetError`.
