@@ -177,8 +177,9 @@ read on 2026-11-14 and 15.
 
 ## Dependencies on the interpreter
 
-Floor `>=0.26.0`, the default binary (the deck needs `net`). It relies on
-these `jennifer` milestones:
+Floor `>=0.27.0`, the default binary (the deck needs `net`). 0.27.0 brought
+the UTF-8 codecs of `encoding.encode` / `decode` and `strings.replicate`.
+It relies on these `jennifer` milestones:
 
 - M28.56, a thrown module struct keeps its identity, so a caller can
   declare a caught error as `anthropic.AnthropicError`.

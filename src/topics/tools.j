@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-only
 # SPDX-FileCopyrightText: Copyright (C) 2026 mplx <mplx@jennifer-lang.dev>
-# pragma-jennifer-version: >=0.26.0
+# pragma-jennifer-version: >=0.27.0
 
 # anthropic - tools: tool definitions, tool results and the tool loop.
 # Spliced into anthropic.j via include.
@@ -238,7 +238,7 @@ func answerAll(
     withContext as bool) {
     def out as Answers init Answers{results: [], ran: 0};
     for (def call in $wanted) {
-        def size as int init len(convert.bytesFromString("utf-8", json.encode($call.input)));
+        def size as int init len(encoding.encode("utf-8", json.encode($call.input)));
         if ($size > $c.maxToolInput) {
             $out.results[] = toolResult($call.id, oversized($c.maxToolInput), true);
         } else {

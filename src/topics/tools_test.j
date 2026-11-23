@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-only
 # SPDX-FileCopyrightText: Copyright (C) 2026 mplx <mplx@jennifer-lang.dev>
-# pragma-jennifer-version: >=0.26.0
+# pragma-jennifer-version: >=0.27.0
 
 # anthropic - white-box tests for the tools topic. Spliced into
 # anthropic_test.j via include.
@@ -308,7 +308,7 @@ func testAThrowingHandlerEndsTheLoop() {
 }
 
 func testAToolInputOverTheCapIsAnErrorResult() {
-    def big as string init strings.repeat("x", 2000);
+    def big as string init strings.replicate("x", 2000);
     def huge as string init '{"id":"m","type":"message","role":"assistant","content":[' +
         '{"type":"tool_use","id":"toolu_big","name":"crash","input":{"city":"' + $big + '"}},' +
         '{"type":"tool_use","id":"toolu_ok","name":"get_weather","input":{"city":"Oslo"}}],' +

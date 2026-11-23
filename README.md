@@ -51,7 +51,7 @@ from `ANTHROPIC_API_KEY`.
 
 ## Requirements
 
-Jennifer 0.26.0 or newer, the default `jennifer` binary (the deck needs the
+Jennifer 0.27.0 or newer, the default `jennifer` binary (the deck needs the
 `net` capability, so not `jennifer-tiny`), network access to
 `api.anthropic.com` and an API key from the
 [Claude Console](https://platform.claude.com). Replies are not streamed (see

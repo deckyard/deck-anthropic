@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-only
 # SPDX-FileCopyrightText: Copyright (C) 2026 mplx <mplx@jennifer-lang.dev>
-# pragma-jennifer-version: >=0.26.0
+# pragma-jennifer-version: >=0.27.0
 
 # anthropic - core: the client and its settings, errors, the HTTP exchange
 # with its deadline, cap and retries, JSON replies, `call` and the Models
@@ -681,7 +681,7 @@ func failStatus(c as Client, r as http.BytesResponse, what as string) {
         $requestId = $r.headers["request-id"];
     }
     try {
-        def text as string init strings.trim(convert.stringFromBytes("utf-8", $r.body));
+        def text as string init strings.trim(encoding.decode("utf-8", $r.body));
         if ($text != "" and not strings.startsWith($text, "<")) {
             $why = $text;
             def v as json.Value init json.decode($text);
@@ -735,7 +735,7 @@ func failStatus(c as Client, r as http.BytesResponse, what as string) {
 func jsonBody(r as http.BytesResponse, what as string) {
     def text as string init "";
     try {
-        $text = convert.stringFromBytes("utf-8", $r.body);
+        $text = encoding.decode("utf-8", $r.body);
     } catch (e) {
         fail($what + ": the reply is not UTF-8");
     }

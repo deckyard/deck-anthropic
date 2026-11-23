@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-only
 # SPDX-FileCopyrightText: Copyright (C) 2026 mplx <mplx@jennifer-lang.dev>
-# pragma-jennifer-version: >=0.26.0
+# pragma-jennifer-version: >=0.27.0
 
 # anthropic - white-box tests for the batches topic. Spliced into
 # anthropic_test.j via include.
@@ -40,7 +40,7 @@ func testBatchRequest() {
         json.encode(greeting("my-first-request", "Hello, world")),
         '{"custom_id":"my-first-request","params":{"model":"claude-opus-5-5","max_tokens":1024,' +
             '"messages":[{"role":"user","content":"Hello, world"}]}}');
-    for (def bad in ["", "has space", strings.repeat("x", 65)]) {
+    for (def bad in ["", "has space", strings.replicate("x", 65)]) {
         try {
             greeting($bad, "x");
             missed($bad);
@@ -216,7 +216,8 @@ func testBatchResults() {
 }
 
 func testWaitBatchCutsASlowPollToTheTimeLeft() {
-    def f as Fake init startFake(["SLEEP\n\n"]);
+    # an uncut poll would take the full 1800 ms, past the 1500 ms bound
+    def f as Fake init startFake(["SLEEP 1800\n\n"]);
     def started as int init time.unixMillis(time.now());
     try {
         waitBatch(fakeClient($f), "msgbatch_01HkcTjaV5uDC8jWR4ZsDV8d", 1000, 1000);
@@ -224,12 +225,12 @@ func testWaitBatchCutsASlowPollToTheTimeLeft() {
     } catch (e) {
         testing.assertEqual($e.kind, "timeout");
     }
-    testing.assertTrue(time.unixMillis(time.now()) - $started < 2500);
+    testing.assertTrue(time.unixMillis(time.now()) - $started < 1500);
     stopFake($f);
 }
 
 func testADecodeBombInTheResultsIsKindLimit() {
-    def deep as string init strings.repeat("[", 2000) + strings.repeat("]", 2000);
+    def deep as string init strings.replicate("[", 2000) + strings.replicate("]", 2000);
     def f as Fake init startFake([answer(200, RESULTS + $deep + "\n"), answer(200, $deep)]);
     def c as Client init fakeClient($f);
     try {

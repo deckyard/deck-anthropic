@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-only
 # SPDX-FileCopyrightText: Copyright (C) 2026 mplx <mplx@jennifer-lang.dev>
-# pragma-jennifer-version: >=0.26.0
+# pragma-jennifer-version: >=0.27.0
 
 # anthropic - messages: building a Messages request and its content blocks,
 # `chat`, `countTokens`, and reading a reply. Spliced into anthropic.j via
@@ -338,7 +338,7 @@ export func imageBlock(mediaType as string, data as bytes) {
  * @throws {AnthropicError} kind "anthropic" when the data does not start with `%PDF-`
  */
 export func pdfBlock(data as bytes) {
-    if (len($data) < 5 or convert.stringFromBytes("utf-8", $data[..5]) != "%PDF-") {
+    if (len($data) < 5 or encoding.decode("utf-8", $data[..5]) != "%PDF-") {
         fail("a PDF starts with %PDF-");
     }
     return base64Block("document", "application/pdf", $data);

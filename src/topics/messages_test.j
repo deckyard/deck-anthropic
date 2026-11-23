@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-only
 # SPDX-FileCopyrightText: Copyright (C) 2026 mplx <mplx@jennifer-lang.dev>
-# pragma-jennifer-version: >=0.26.0
+# pragma-jennifer-version: >=0.27.0
 
 # anthropic - white-box tests for the messages topic. Spliced into
 # anthropic_test.j via include.
@@ -39,11 +39,11 @@ func testRequestBuilders() {
 }
 
 func testContentBlocks() {
-    def png as bytes init convert.bytesFromString("utf-8", "PNGDATA");
+    def png as bytes init encoding.encode("utf-8", "PNGDATA");
     testing.assertEqual(
         json.encode(imageBlock("image/png", $png)),
         '{"type":"image","source":{"type":"base64","media_type":"image/png","data":"UE5HREFUQQ=="}}');
-    def pdf as bytes init convert.bytesFromString("utf-8", "%PDF-1.7");
+    def pdf as bytes init encoding.encode("utf-8", "%PDF-1.7");
     testing.assertEqual(
         json.encode(pdfBlock($pdf)),
         '{"type":"document","source":{"type":"base64","media_type":"application/pdf","data":"JVBERi0xLjc="}}');

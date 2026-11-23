@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-only
 # SPDX-FileCopyrightText: Copyright (C) 2026 mplx <mplx@jennifer-lang.dev>
-# pragma-jennifer-version: >=0.26.0
+# pragma-jennifer-version: >=0.27.0
 
 # anthropic - batches: the Message Batches API, from creating a batch to
 # reading its JSONL results. Spliced into anthropic.j via include.
@@ -228,7 +228,7 @@ export func batchResults(c as Client, id as string) {
         $what);
     def text as string init "";
     try {
-        $text = convert.stringFromBytes("utf-8", $r.body);
+        $text = encoding.decode("utf-8", $r.body);
     } catch (e) {
         fail($what + ": the reply is not UTF-8");
     }

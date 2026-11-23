@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-only
 # SPDX-FileCopyrightText: Copyright (C) 2026 mplx <mplx@jennifer-lang.dev>
-# pragma-jennifer-version: >=0.26.0
+# pragma-jennifer-version: >=0.27.0
 
 # anthropic - white-box tests for the core topic, and the fake server the
 # other overlays use. Spliced into anthropic_test.j via include.
@@ -49,7 +49,7 @@ func missed(what as string) {
 /**
  * Start a fake API that answers requests in order, whatever they ask. An
  * answer is the status, a newline, header lines `Name: value`, an empty
- * line and the body; status `SLEEP` waits 3 seconds and answers 200. Once
+ * line and the body; status `SLEEP <ms>` waits that long and answers 200. Once
  * the answers run out it answers 500.
  *
  * @param answers {list of string} the answers, in order
@@ -92,7 +92,7 @@ func serveFake(srv as httpd.Server, answers as list of string) {
             }
         }
         $seen[] = strings.join($lines, "\n") + "\n\n" +
-            convert.stringFromBytes("utf-8", httpd.body($req));
+            encoding.decode("utf-8", httpd.body($req));
         def spec as string init "500\ncontent-type: application/json\n\n" + ERR_API;
         if ($next < len($answers)) {
             $spec = $answers[$next];
@@ -104,8 +104,8 @@ func serveFake(srv as httpd.Server, answers as list of string) {
             def at as int init strings.indexOf($h, ": ");
             httpd.setHeader($req, $h[..$at], $h[$at + 2..]);
         }
-        if ($head[0] == "SLEEP") {
-            time.sleep(time.fromMilliseconds(3000));
+        if (strings.startsWith($head[0], "SLEEP ")) {
+            time.sleep(time.fromMilliseconds(convert.toInt($head[0][len("SLEEP ")..])));
             httpd.respond($req, 200, '{}');
         } else {
             httpd.respond($req, convert.toInt($head[0]), $spec[$split + 2..]);
@@ -488,7 +488,7 @@ func testRetryWait() {
 }
 
 func testTheDeadlineIsKindTimeout() {
-    def f as Fake init startFake(["SLEEP\n\n"]);
+    def f as Fake init startFake(["SLEEP 600\n\n"]);
     def c as Client init fakeClient($f);
     $c.timeoutMs = 300;
     try {
@@ -503,7 +503,7 @@ func testTheDeadlineIsKindTimeout() {
 
 func testTheCapIsKindLimit() {
     def f as Fake init startFake([
-        answer(200, '{"data":[],"pad":"' + strings.repeat("x", 70000) + '"}')
+        answer(200, '{"data":[],"pad":"' + strings.replicate("x", 70000) + '"}')
     ]);
     def c as Client init withMaxBytes(fakeClient($f), 65536);
     try {
@@ -544,7 +544,7 @@ func testAConnectionClosedMidAnswerIsKindClosedAndNotRetried() {
             net.readBytes($conn, 65536);
             net.writeBytes(
                 $conn,
-                convert.bytesFromString(
+                encoding.encode(
                     "utf-8",
                     "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 500\r\n\r\n" +
                         '{"data"'));
@@ -630,7 +630,7 @@ func testAnEchoedKeyNeverReachesTheError() {
 }
 
 func testModelsCapsThePagesTogether() {
-    def pad as string init strings.repeat("x", 40000);
+    def pad as string init strings.replicate("x", 40000);
     def page as string init '{"data":[],"pad":"' + $pad + '","has_more":true,"last_id":"claude-x"}';
     def f as Fake init startFake([answer(200, $page), answer(200, $page), answer(200, $page)]);
     def c as Client init withMaxBytes(fakeClient($f), 65536);
@@ -657,7 +657,7 @@ func serveRaw(l as net.Listener, replies as list of string) {
         def conn as net.Conn init net.accept($l);
         net.readBytes($conn, 65536);
         if ($reply != "") {
-            net.writeBytes($conn, convert.bytesFromString("utf-8", $reply));
+            net.writeBytes($conn, encoding.encode("utf-8", $reply));
         }
         net.close($conn);
     }
@@ -794,7 +794,7 @@ func serveResets(l as net.Listener, n as int, early as bool, reply as string) {
             net.readBytes($conn, 65536);
         }
         if ($reply != "") {
-            net.writeBytes($conn, convert.bytesFromString("utf-8", $reply));
+            net.writeBytes($conn, encoding.encode("utf-8", $reply));
             time.sleep(time.fromMilliseconds(50));
         }
         net.abort($conn);
@@ -811,7 +811,7 @@ func testAResetBeforeTheRequestWasSentIsRetried() {
     def c as Client init withTimeout(withBaseUrl(client(KEY), "http://" + $addr), 5000);
     $c.backoffMs = 10;
     # a body too big for the socket buffers: the write meets the reset
-    def big as json.Value init json.set(json.map(), "/pad", strings.repeat("x", 16000000));
+    def big as json.Value init json.set(json.map(), "/pad", strings.replicate("x", 16000000));
     try {
         call($c, "POST", "/v1/messages", $big);
         missed("resets");
