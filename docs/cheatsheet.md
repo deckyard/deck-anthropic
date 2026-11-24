@@ -12,7 +12,7 @@ import "@deckyard/anthropic/" as anthropic;
 
 Requests, replies, blocks and tools are `json.Value` documents in the API's
 own shape. A refused request throws `AnthropicError` (kind `anthropic`) with
-the HTTP `status`, Anthropic's error `type`, the `requestId`, the wait the
+the HTTP `status`, Anthropic™'s error `type`, the `requestId`, the wait the
 server asked for and its rate-limit headers; so does a
 request the deck refuses to send (`status` 0). A reply over the cap is kind
 `"limit"`, a deadline that passed `"timeout"`, a connection the server
@@ -42,7 +42,7 @@ returned.
 
 | Function | Returns | Does |
 |---|---|---|
-| `client(apiKey)` | `Client` | a client for the Claude API with an API key |
+| `client(apiKey)` | `Client` | a client for the Claude™ API with an API key |
 | `withBaseUrl(c, baseUrl)` | `Client` | another API root: a gateway, a proxy, a fake |
 | `withPlainHttp(c)` | `Client` | allow plain http to another machine (the key crosses in clear) |
 | `withTls(c, tls)` | `Client` | certificate options (`caCert`, `skipVerify`) |

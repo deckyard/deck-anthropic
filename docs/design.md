@@ -5,7 +5,7 @@
 
 ## Scope
 
-`@deckyard/anthropic` is a client for Anthropic's Claude Messages API,
+`@deckyard/anthropic` is a client for Anthropic™'s Claude™ Messages API,
 written in Jennifer over plain HTTPS: there is no Anthropic SDK for
 Jennifer. It covers messages with text, image and PDF content, tool use
 with a tool loop, adaptive thinking and effort, prompt caching, structured

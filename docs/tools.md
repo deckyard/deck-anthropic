@@ -27,12 +27,12 @@ object. The description is what the model reads to decide; say what the tool
 does and when to use it.
 
 `tool_choice` is `auto` unless set (`json.set($req, "/tool_choice", ...)`).
-Claude Opus 5.5, Sonnet 5.5 and Fable 5.1 and 5.2 refuse a forced tool
+Claude™ Opus 5.5, Sonnet 5.5 and Fable 5.1 and 5.2 refuse a forced tool
 (`any` or `tool`) with a 400: keep `auto`, name the tool in the prompt, and
 use a strict tool, or [structured outputs](messages.md#structured-outputs)
 when the call only existed to get JSON back.
 
-Server tools run on Anthropic's side and are declared the same way, without
+Server tools run on Anthropic™'s side and are declared the same way, without
 a schema:
 
 ```jennifer

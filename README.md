@@ -4,7 +4,7 @@
 [![Documentation](https://img.shields.io/badge/docs-github%20pages-blue)](https://deckyard.github.io/deck-anthropic/)
 [![release](https://img.shields.io/github/v/release/deckyard/deck-anthropic)](https://github.com/deckyard/deck-anthropic/releases/latest)
 
-A client for Anthropic's Claude Messages API for
+A client for Anthropic™'s Claude™ Messages API for
 [Jennifer](https://jennifer-lang.dev/) programs, over plain HTTPS: messages
 with text, image and PDF content, tool use with a tool loop, adaptive
 thinking and effort, prompt caching, structured outputs, token counting,
@@ -68,6 +68,14 @@ tools/pack.sh dist                   # build the release archive
 
 The tests need no key: a loopback fake answers with replies in the shape of
 Anthropic's API reference.
+
+## Trademarks
+
+Anthropic™ and Claude™ are trademarks of Anthropic, PBC. Other product and
+company names may be trademarks of their respective owners. They are used
+only to identify the products this deck works with. This deck is an
+independent project, not affiliated with, sponsored or endorsed by
+Anthropic, PBC.
 
 ## Licence
 

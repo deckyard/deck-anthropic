@@ -3,7 +3,7 @@
 
 # @deckyard/anthropic
 
-A client for Anthropic's Claude Messages API, written in Jennifer over
+A client for Anthropic™'s Claude™ Messages API, written in Jennifer over
 plain HTTPS: there is no Anthropic SDK for Jennifer. It sends messages with
 text, image and PDF content, runs tool loops, sets adaptive thinking and
 effort, places prompt-cache breakpoints, asks for structured output, counts
@@ -196,3 +196,11 @@ Server tools (web search, code execution) need nothing new: add them with
 - [Tool use](tools.md): tool definitions and the tool loop.
 - [Message batches](batches.md): asynchronous batches at half the price.
 - [Cheatsheet](cheatsheet.md): every export.
+
+## Trademarks
+
+Anthropic™ and Claude™ are trademarks of Anthropic, PBC. Other product and
+company names may be trademarks of their respective owners. They are used
+only to identify the products this deck works with. This deck is an
+independent project, not affiliated with, sponsored or endorsed by
+Anthropic, PBC.

@@ -101,7 +101,7 @@ $req = anthropic.withEffort($req, "high");
 | `updates` | short progress notes between tool calls (beta `thinking-display-updates-2026-08-18`) |
 
 Effort is `low`, `medium`, `high`, `xhigh` or `max`, sent as
-`output_config.effort`. Claude Opus 5.5 defaults to `medium`, most other
+`output_config.effort`. Claude™ Opus 5.5 defaults to `medium`, most other
 current models to `high`; `xhigh` suits most coding and agent work. Thinking
 is billed as output whatever the display; `usage(reply).reasoningTokens`
 shows how much.
@@ -141,7 +141,7 @@ def u as anthropic.Usage init anthropic.usage($reply);
 io.printf("cache: %d read, %d written\n", $u.cachedTokens, $u.cacheCreationInputTokens);
 ```
 
-`inputTokens` counts every input token, cached or not: Anthropic's
+`inputTokens` counts every input token, cached or not: Anthropic™'s
 `input_tokens` plus `cachedTokens` (read from the cache) plus
 `cacheCreationInputTokens` (written to it). `totalTokens` is `inputTokens +
 outputTokens`; thinking is part of `outputTokens` (`reasoningTokens` says
