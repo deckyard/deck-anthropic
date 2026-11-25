@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-only
 # SPDX-FileCopyrightText: Copyright (C) 2026 mplx <mplx@jennifer-lang.dev>
-# pragma-jennifer-version: >=0.27.0
+# pragma-jennifer-version: >=0.28.0
 
 # anthropic - white-box tests for the core topic, and the fake server the
 # other overlays use. Spliced into anthropic_test.j via include.
@@ -406,9 +406,9 @@ func testRetriesHonourRetryAfter() {
         answer(529, ERR_OVERLOADED),
         answer(200, MODELS_PAGE2)
     ]);
-    def started as int init time.unixMillis(time.now());
+    def started as int init time.unixMilliseconds(time.now());
     def all as list of json.Value init models(fakeClient($f));
-    def took as int init time.unixMillis(time.now()) - $started;
+    def took as int init time.unixMilliseconds(time.now()) - $started;
     def seen as list of string init stopFake($f);
     testing.assertEqual(len($seen), 3);
     testing.assertEqual(len($all), 1);
@@ -708,7 +708,7 @@ func testErrorsCarryTheWaitAndTheRateLimitHeaders() {
         answer(400, ERR_INVALID)
     ]);
     def c as Client init fakeClient($f);
-    def started as int init time.unixMillis(time.now());
+    def started as int init time.unixMilliseconds(time.now());
     try {
         models($c);
         missed("a 429");
@@ -723,7 +723,7 @@ func testErrorsCarryTheWaitAndTheRateLimitHeaders() {
         testing.assertEqual($e.limits["retry-after"], "120");
         testing.assertFalse(maps.has($e.limits, "request-id"));
     }
-    testing.assertTrue(time.unixMillis(time.now()) - $started < 1000);
+    testing.assertTrue(time.unixMilliseconds(time.now()) - $started < 1000);
     try {
         models($c);
         missed("a 400");
@@ -747,9 +747,9 @@ func testRetryAfterMsIsHonoured() {
             ERR_OVERLOADED,
         answer(200, MODELS_PAGE2)
     ]);
-    def started as int init time.unixMillis(time.now());
+    def started as int init time.unixMilliseconds(time.now());
     testing.assertEqual(len(models(fakeClient($f))), 1);
-    def took as int init time.unixMillis(time.now()) - $started;
+    def took as int init time.unixMilliseconds(time.now()) - $started;
     testing.assertTrue($took >= 300 and $took < 5000);
     stopFake($f);
 }

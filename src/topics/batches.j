@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-only
 # SPDX-FileCopyrightText: Copyright (C) 2026 mplx <mplx@jennifer-lang.dev>
-# pragma-jennifer-version: >=0.27.0
+# pragma-jennifer-version: >=0.28.0
 
 # anthropic - batches: the Message Batches API, from creating a batch to
 # reading its JSONL results. Spliced into anthropic.j via include.
@@ -178,12 +178,12 @@ export func deleteBatch(c as Client, id as string) {
 export func waitBatch(c as Client, id as string, pollMs as int, timeoutMs as int) {
     checkRange($pollMs, 1000, 3600000, "the poll interval");
     checkRange($timeoutMs, 1000, 172800000, "the timeout");
-    def deadline as int init time.unixMillis(time.now()) + $timeoutMs;
+    def deadline as int init time.unixMilliseconds(time.now()) + $timeoutMs;
     def poller as Client init $c;
     while (true) {
         # a poll may take no longer than the time left (at least 1 s), and
         # a poll that ran out of it is not retried
-        def room as int init math.max(1000, $deadline - time.unixMillis(time.now()));
+        def room as int init math.max(1000, $deadline - time.unixMilliseconds(time.now()));
         if ($room < $c.timeoutMs) {
             $poller.timeoutMs = $room;
         }
@@ -191,7 +191,7 @@ export func waitBatch(c as Client, id as string, pollMs as int, timeoutMs as int
         if (json.asString($b, "/processing_status") == "ended") {
             return $b;
         }
-        def left as int init $deadline - time.unixMillis(time.now());
+        def left as int init $deadline - time.unixMilliseconds(time.now());
         if ($left <= 0) {
             failTimeout(io.sprintf("batch %s: not ended within %d ms", $id, $timeoutMs));
         }

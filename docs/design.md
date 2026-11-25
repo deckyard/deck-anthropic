@@ -177,7 +177,7 @@ read on 2026-11-14 and 15.
 
 ## Dependencies on the interpreter
 
-Floor `>=0.27.0`, the default binary (the deck needs `net`). 0.27.0 brought
+Floor `>=0.28.0` (the calls 0.29.0 removes are replaced by their 0.28.0 forms), the default binary (the deck needs `net`). 0.27.0 brought
 the UTF-8 codecs of `encoding.encode` / `decode` and `strings.replicate`.
 It relies on these `jennifer` milestones:
 

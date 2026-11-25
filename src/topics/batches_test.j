@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-only
 # SPDX-FileCopyrightText: Copyright (C) 2026 mplx <mplx@jennifer-lang.dev>
-# pragma-jennifer-version: >=0.27.0
+# pragma-jennifer-version: >=0.28.0
 
 # anthropic - white-box tests for the batches topic. Spliced into
 # anthropic_test.j via include.
@@ -218,14 +218,14 @@ func testBatchResults() {
 func testWaitBatchCutsASlowPollToTheTimeLeft() {
     # an uncut poll would take the full 1800 ms, past the 1500 ms bound
     def f as Fake init startFake(["SLEEP 1800\n\n"]);
-    def started as int init time.unixMillis(time.now());
+    def started as int init time.unixMilliseconds(time.now());
     try {
         waitBatch(fakeClient($f), "msgbatch_01HkcTjaV5uDC8jWR4ZsDV8d", 1000, 1000);
         missed("a slow poll");
     } catch (e) {
         testing.assertEqual($e.kind, "timeout");
     }
-    testing.assertTrue(time.unixMillis(time.now()) - $started < 1500);
+    testing.assertTrue(time.unixMilliseconds(time.now()) - $started < 1500);
     stopFake($f);
 }
 

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-3.0-only
 # SPDX-FileCopyrightText: Copyright (C) 2026 mplx <mplx@jennifer-lang.dev>
-# pragma-jennifer-version: >=0.27.0
+# pragma-jennifer-version: >=0.28.0
 
 # anthropic - core: the client and its settings, errors, the HTTP exchange
 # with its deadline, cap and retries, JSON replies, `call` and the Models
@@ -475,7 +475,12 @@ func attempt(
     def maxBytes as int init $c.maxBytes;
     def tls as http.TlsOptions init $c.tls;
     def t as task of http.BytesResponse init spawn {
-        return http.requestWithBytes($method, $url, $headers, $body, $timeoutMs, $maxBytes, $tls);
+        return http.sendBytes(
+            $method,
+            $url,
+            $headers,
+            encoding.encode("utf-8", $body),
+            httpOptions($timeoutMs, $maxBytes, $tls));
     };
     def none as net.NetError;
     try {
@@ -556,8 +561,10 @@ func namedWait(r as http.BytesResponse) {
         '^[A-Za-z]{3}, [0-9]{2} [A-Za-z]{3} [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$',
         $v)) {
         try {
-            def at as int init time.unixMillis(time.parse($v, "%a, %d %b %Y %H:%M:%S GMT"));
-            return math.min(MAX_NAMED_WAIT_MS, math.max(0, $at - time.unixMillis(time.now())));
+            def at as int init time.unixMilliseconds(time.parse($v, "%a, %d %b %Y %H:%M:%S GMT"));
+            return math.min(
+                MAX_NAMED_WAIT_MS,
+                math.max(0, $at - time.unixMilliseconds(time.now())));
         } catch (e) {
             # past what time represents (about 2262): as far as it goes
             if (convert.toInt($v[12..16]) >= 2262) {
@@ -907,4 +914,21 @@ export func models(c as Client) {
 export func model(c as Client, id as string) {
     checkId($id, "a model id");
     return mapReply(api($c, "GET", "/v1/models/" + $id, "", "model " + $id), "model " + $id);
+}
+
+# httpOptions is the http.Options a positional timeout, body cap and TLS
+# setting stand for: a timeout of 0 means no idle timeout, as it did for the
+# positional calls.
+func httpOptions(timeoutMs as int, maxBytes as int, tls as http.TlsOptions) {
+    def o as http.Options;
+    $o.timeoutMs = $timeoutMs;
+    if ($timeoutMs == 0) {
+        $o.timeoutMs = math.MAX_INT;
+    }
+    $o.maxBytes = $maxBytes;
+    def t as net.TLSOptions;
+    $t.skipVerify = $tls.skipVerify;
+    $t.caCert = $tls.caCert;
+    $o.tlsOptions = $t;
+    return $o;
 }
